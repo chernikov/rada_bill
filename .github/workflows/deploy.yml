@@ -92,6 +92,32 @@ jobs:
             --replication-policy=automatic \
             || gcloud secrets versions add TELEGRAM_BOT_TOKEN --data-file=- <<< "${{ secrets.TELEGRAM_BOT_TOKEN }}"
       
+      - name: Get or Set Service URL
+        id: service-url
+        run: |
+          # Try to get existing service URL first
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          
+          # If service doesn't exist, construct expected URL
+          if [ -z "$SERVICE_URL" ]; then
+            echo "Service not found, will be created"
+            SERVICE_URL="https://${{ env.SERVICE_NAME }}-$(gcloud config get-value project | md5sum | cut -c1-10)-${{ env.REGION }}.a.run.app"
+          fi
+          
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "WEBHOOK_URL=$SERVICE_URL/api/telegram/webhook" >> $GITHUB_OUTPUT
+          echo "Service URL: $SERVICE_URL"
+          echo "Webhook URL: $SERVICE_URL/api/telegram/webhook"
+      
+      - name: Generate Secret Token
+        id: secret-token
+        run: |
+          SECRET_TOKEN=$(openssl rand -hex 32)
+          echo "token=$SECRET_TOKEN" >> $GITHUB_OUTPUT
+          echo "::add-mask::$SECRET_TOKEN"
+      
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
@@ -104,23 +130,23 @@ jobs:
             --timeout 300 \
             --max-instances 10 \
             --min-instances 0 \
-            --set-env-vars="DEBUG=false,GCP_PROJECT_ID=${{ env.PROJECT_ID }},FIRESTORE_DATABASE=(default),GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" \
+            --set-env-vars="DEBUG=false,GCP_PROJECT_ID=${{ env.PROJECT_ID }},FIRESTORE_DATABASE=(default),GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }},TELEGRAM_SECRET_TOKEN=${{ steps.secret-token.outputs.token }}" \
             --update-secrets="GEMINI_API_KEY=GEMINI_API_KEY:latest,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest"
       
-      - name: Get Service URL
-        id: service-url
+      - name: Verify Service URL
+        id: verify-url
         run: |
           SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
             --format 'value(status.url)')
           echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
-          echo "Service deployed to: $SERVICE_URL"
+          echo "Final Service URL: $SERVICE_URL"
       
       - name: Test Deployment
         run: |
           sleep 10
-          curl -f ${{ steps.service-url.outputs.url }}/health || echo "Health check failed"
-          curl -f ${{ steps.service-url.outputs.url }}/api/bills || echo "API check failed"
+          curl -f ${{ steps.verify-url.outputs.url }}/health || echo "Health check failed"
+          curl -f ${{ steps.verify-url.outputs.url }}/api/bills || echo "API check failed"
       
       - name: Deployment Summary
         run: |
@@ -128,10 +154,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: ${{ steps.service-url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.verify-url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Webhook**: ${{ steps.service-url.outputs.WEBHOOK_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Image**: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Quick Links:" >> $GITHUB_STEP_SUMMARY
-          echo "- [Service URL](${{ steps.service-url.outputs.url }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [Health Check](${{ steps.service-url.outputs.url }}/health)" >> $GITHUB_STEP_SUMMARY
-          echo "- [API Docs](${{ steps.service-url.outputs.url }}/docs)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Service URL](${{ steps.verify-url.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Health Check](${{ steps.verify-url.outputs.url }}/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [API Docs](${{ steps.verify-url.outputs.url }}/docs)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Telegram Webhook](${{ steps.service-url.outputs.WEBHOOK_URL }})" >> $GITHUB_STEP_SUMMARY
