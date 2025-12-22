@@ -84,11 +84,23 @@ jobs:
           echo "GEMINI_TEMPERATURE=0.7" >> .env.production
           echo "GEMINI_MAX_TOKENS=8000" >> .env.production
           echo "" >> .env.production
-          echo "# Secrets (added via echo to prevent newline injection)" >> .env.production
-          echo "GEMINI_API_KEY=$(echo '${{ secrets.GOOGLE_API_KEY }}' | tr -d '\n' | tr -d '\r')" >> .env.production
-          echo "TELEGRAM_BOT_TOKEN=$(echo '${{ secrets.TELEGRAM_BOT_TOKEN }}' | tr -d '\n' | tr -d '\r')" >> .env.production
+          echo "# Secrets (trimmed to remove any newlines)" >> .env.production
+          GEMINI_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
+          GEMINI_API_KEY="${GEMINI_API_KEY//$'\n'/}"
+          GEMINI_API_KEY="${GEMINI_API_KEY//$'\r'/}"
+          echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.production
+          
+          TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}"
+          TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN//$'\n'/}"
+          TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN//$'\r'/}"
+          echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> .env.production
+          
           echo "TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }}" >> .env.production
-          echo "TELEGRAM_SECRET_TOKEN=$(echo '${{ secrets.TELEGRAM_SECRET_TOKEN }}' | tr -d '\n' | tr -d '\r')" >> .env.production
+          
+          TELEGRAM_SECRET_TOKEN="${{ secrets.TELEGRAM_SECRET_TOKEN }}"
+          TELEGRAM_SECRET_TOKEN="${TELEGRAM_SECRET_TOKEN//$'\n'/}"
+          TELEGRAM_SECRET_TOKEN="${TELEGRAM_SECRET_TOKEN//$'\r'/}"
+          echo "TELEGRAM_SECRET_TOKEN=$TELEGRAM_SECRET_TOKEN" >> .env.production
           
           # Display file for debugging
           echo "Generated .env.production:"
