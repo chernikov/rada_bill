@@ -1,0 +1,44 @@
+service: bills-analyzer
+runtime: custom
+env: flex
+
+env_variables:
+  DEBUG: "false"
+  GCP_PROJECT_ID: "gen-lang-client-0955618410"
+  FIRESTORE_DATABASE: "(default)"
+
+automatic_scaling:
+  min_num_instances: 1
+  max_num_instances: 10
+  cool_down_period_sec: 180
+  cpu_utilization:
+    target_utilization: 0.6
+
+resources:
+  cpu: 1
+  memory_gb: 2
+  disk_size_gb: 10
+
+health_check:
+  enable_health_check: true
+  check_interval_sec: 30
+  timeout_sec: 10
+  unhealthy_threshold: 2
+  healthy_threshold: 2
+  initial_delay_sec: 60
+
+liveness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 10
+  failure_threshold: 2
+  success_threshold: 1
+  initial_delay_sec: 60
+
+readiness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 10
+  failure_threshold: 2
+  success_threshold: 1
+  initial_delay_sec: 60

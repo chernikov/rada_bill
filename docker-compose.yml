@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bills-analyzer:latest
+    container_name: bills-analyzer
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8080
+      - PYTHONPATH=/app/src
+    volumes:
+      # Mount logs directory for persistence
+      - ./logs:/app/logs
+      # Mount temp directory for document processing
+      - ./temp:/app/temp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Опціонально: Nginx reverse proxy
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: bills-analyzer-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - app
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: bills-analyzer-network

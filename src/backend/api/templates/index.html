@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bills Analyzer - Аналіз Законопроєктів України</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 90%;
+            padding: 50px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .description {
+            color: #555;
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .feature {
+            padding: 25px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .feature h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+        
+        .feature p {
+            color: #666;
+            font-size: 15px;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+        
+        .btn {
+            padding: 15px 35px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 40px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #4caf50;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .version {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🏛️</div>
+        <h1>Bills Analyzer <span class="version">v{{ version }}</span></h1>
+        <p class="subtitle">Сервіс обробки та аналізу законопроєктів Верховної Ради України</p>
+        
+        <div class="description">
+            <p>
+                <strong>Bills Analyzer</strong> — це інтелектуальна система для автоматичного аналізу 
+                українських законопроєктів за допомогою штучного інтелекту. Сервіс надає детальну 
+                інформацію про законопроєкти, їх автора, корупційні ризики та вплив на країну.
+            </p>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🔍</div>
+                <h3>Пошук законопроєктів</h3>
+                <p>Швидкий пошук по номеру або ключовим словам</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-аналіз</h3>
+                <p>Автоматичний аналіз за допомогою Google Gemini</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📄</div>
+                <h3>Обробка документів</h3>
+                <p>Конвертація PDF та DOCX файлів</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">💬</div>
+                <h3>Telegram Bot</h3>
+                <p>Зручний доступ через месенджер</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Швидка робота</h3>
+                <p>Оптимізована для продуктивності</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <h3>Безпека даних</h3>
+                <p>Зберігання в Google Firestore</p>
+            </div>
+        </div>
+        
+        <div class="cta-buttons">
+            <a href="/docs" class="btn btn-primary">📚 API Документація</a>
+            <a href="/api/v1/bills?page=1&per_page=5" class="btn btn-secondary">🔗 API Endpoint</a>
+        </div>
+        
+        <div class="status">
+            <span class="status-indicator"></span>
+            <strong>Статус:</strong> Система працює
+        </div>
+        
+        <div class="footer">
+            <p>Розроблено для аналізу законопроєктів Верховної Ради України</p>
+            <p style="margin-top: 10px;">© 2025 Bills Analyzer. Всі права захищені.</p>
+        </div>
+    </div>
+</body>
+</html>

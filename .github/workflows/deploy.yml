@@ -1,0 +1,137 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/deployment
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: gen-lang-client-0955618410
+  REGION: europe-west3
+  SERVICE_NAME: bills-analyzer
+  REPOSITORY: cloud-run-source-deploy
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      
+      - name: Create .env.production file
+        run: |
+          cat > .env.production << EOF
+          # Production Environment Variables
+          DEBUG=false
+          
+          # Google Cloud Configuration
+          GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}
+          GCP_PROJECT_ID=${{ env.PROJECT_ID }}
+          FIRESTORE_DATABASE=(default)
+          
+          # API Keys (will be overridden by Cloud Run secrets)
+          GEMINI_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          
+          # API Configuration
+          API_HOST=0.0.0.0
+          API_PORT=8080
+          
+          # AI Model Configuration
+          GEMINI_MODEL=gemini-2.0-flash-exp
+          GEMINI_TEMPERATURE=0.7
+          GEMINI_MAX_TOKENS=8000
+          EOF
+      
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+                       -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:latest \
+                       .
+      
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:latest
+      
+      - name: Create secrets in Secret Manager (if not exist)
+        continue-on-error: true
+        run: |
+          # Create GEMINI_API_KEY secret
+          echo -n "${{ secrets.GOOGLE_API_KEY }}" | gcloud secrets create GEMINI_API_KEY \
+            --data-file=- \
+            --replication-policy=automatic \
+            || gcloud secrets versions add GEMINI_API_KEY --data-file=- <<< "${{ secrets.GOOGLE_API_KEY }}"
+          
+          # Create TELEGRAM_BOT_TOKEN secret
+          echo -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" | gcloud secrets create TELEGRAM_BOT_TOKEN \
+            --data-file=- \
+            --replication-policy=automatic \
+            || gcloud secrets versions add TELEGRAM_BOT_TOKEN --data-file=- <<< "${{ secrets.TELEGRAM_BOT_TOKEN }}"
+      
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --memory 1Gi \
+            --cpu 2 \
+            --timeout 300 \
+            --max-instances 10 \
+            --min-instances 0 \
+            --set-env-vars="DEBUG=false,GCP_PROJECT_ID=${{ env.PROJECT_ID }},FIRESTORE_DATABASE=(default),GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" \
+            --update-secrets="GEMINI_API_KEY=GEMINI_API_KEY:latest,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest"
+      
+      - name: Get Service URL
+        id: service-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "Service deployed to: $SERVICE_URL"
+      
+      - name: Test Deployment
+        run: |
+          sleep 10
+          curl -f ${{ steps.service-url.outputs.url }}/health || echo "Health check failed"
+          curl -f ${{ steps.service-url.outputs.url }}/api/bills || echo "API check failed"
+      
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Successful! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.service-url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Links:" >> $GITHUB_STEP_SUMMARY
+          echo "- [Service URL](${{ steps.service-url.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Health Check](${{ steps.service-url.outputs.url }}/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [API Docs](${{ steps.service-url.outputs.url }}/docs)" >> $GITHUB_STEP_SUMMARY
