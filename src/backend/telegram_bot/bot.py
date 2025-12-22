@@ -149,6 +149,9 @@ class TelegramBot:
         # Unknown command handler (must be last)
         self.application.add_handler(MessageHandler(filters.COMMAND, self.unknown_command))
         
+        # Error handler
+        self.application.add_error_handler(self.error_handler)
+        
         logger.info("bot_handlers_registered")
         print("✅ Bot handlers registered: start, help, bill, search, status")
     
@@ -734,6 +737,33 @@ class TelegramBot:
             "/version - Версія бота",
             parse_mode="Markdown"
         )
+    
+    async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE):
+        """Handle errors in the bot"""
+        logger.error("bot_error", error=str(context.error), update=str(update))
+        
+        # Handle specific error types
+        if isinstance(context.error, Exception):
+            error_message = str(context.error)
+            
+            # Chat not found - typically from test webhooks with fake IDs
+            if "Chat not found" in error_message:
+                logger.warning("chat_not_found", error=error_message)
+                return  # Silently ignore - this is expected for test requests
+            
+            # Other BadRequest errors
+            if "BadRequest" in error_message:
+                logger.warning("telegram_bad_request", error=error_message)
+                return
+        
+        # For real user interactions, optionally notify them
+        if update and hasattr(update, 'effective_message') and update.effective_message:
+            try:
+                await update.effective_message.reply_text(
+                    "⚠️ Виникла помилка при обробці вашого запиту. Спробуйте пізніше."
+                )
+            except Exception as e:
+                logger.error("error_notification_failed", error=str(e))
     
     async def process_update(self, update_data: dict):
         """Process incoming update from webhook"""
