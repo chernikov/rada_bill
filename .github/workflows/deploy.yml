@@ -62,29 +62,33 @@ jobs:
       
       - name: Create .env.production file
         run: |
-          cat > .env.production << 'EOF'
-          # Production Environment Variables
-          DEBUG=false
-          
-          # Google Cloud Configuration
-          GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}
-          GCP_PROJECT_ID=${{ env.PROJECT_ID }}
-          FIRESTORE_DATABASE=(default)
-          
-          # API Configuration
-          API_HOST=0.0.0.0
-          API_PORT=8080
-          
-          # AI Model Configuration
-          GEMINI_MODEL=gemini-2.0-flash-exp
-          GEMINI_TEMPERATURE=0.7
-          GEMINI_MAX_TOKENS=8000
-          EOF
-          # Add secrets without newlines (echo adds newline automatically)
+          # Use only echo to avoid heredoc newline issues
+          echo "# Production Environment Variables" > .env.production
+          echo "DEBUG=false" >> .env.production
+          echo "" >> .env.production
+          echo "# Google Cloud Configuration" >> .env.production
+          echo "GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}" >> .env.production
+          echo "GCP_PROJECT_ID=${{ env.PROJECT_ID }}" >> .env.production
+          echo "FIRESTORE_DATABASE=(default)" >> .env.production
+          echo "" >> .env.production
+          echo "# API Configuration" >> .env.production
+          echo "API_HOST=0.0.0.0" >> .env.production
+          echo "API_PORT=8080" >> .env.production
+          echo "" >> .env.production
+          echo "# AI Model Configuration" >> .env.production
+          echo "GEMINI_MODEL=gemini-2.0-flash-exp" >> .env.production
+          echo "GEMINI_TEMPERATURE=0.7" >> .env.production
+          echo "GEMINI_MAX_TOKENS=8000" >> .env.production
+          echo "" >> .env.production
+          echo "# Secrets (added via echo to prevent newline injection)" >> .env.production
           echo "GEMINI_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env.production
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env.production
           echo "TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }}" >> .env.production
           echo "TELEGRAM_SECRET_TOKEN=${{ secrets.TELEGRAM_SECRET_TOKEN }}" >> .env.production
+          
+          # Display file for debugging
+          echo "Generated .env.production:"
+          cat .env.production | head -30
       
       - name: Build Docker image
         run: |

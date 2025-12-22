@@ -35,15 +35,40 @@ async def telegram_webhook(
         update_data = await request.json()
         logger.info("webhook_received", update_id=update_data.get('update_id'))
         
-        # Process update with bot handlers
-        await bot.process_update(update_data)
+        # Check if bot is initialized
+        if bot.application is None:
+            error_msg = "Bot application is not initialized (bot.application is None)"
+            logger.error("bot_not_initialized", error=error_msg)
+            return {"ok": False, "error": error_msg, "details": "Bot failed to start during application startup"}
         
-        return {"ok": True}
+        # Check if application was initialized
+        try:
+            # Process update with bot handlers
+            await bot.process_update(update_data)
+            logger.info("update_processed_successfully", update_id=update_data.get('update_id'))
+            return {"ok": True}
+        except RuntimeError as e:
+            if "not initialized" in str(e).lower():
+                error_msg = f"Application not initialized: {str(e)}"
+                logger.error("application_not_initialized", error=error_msg)
+                return {
+                    "ok": False, 
+                    "error": error_msg,
+                    "details": "Check Cloud Run logs for bot startup errors"
+                }
+            raise
     
     except Exception as e:
-        logger.error("webhook_processing_failed", error=str(e))
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error("webhook_processing_failed", error=str(e), traceback=error_trace)
         # Still return 200 to Telegram to avoid retries
-        return {"ok": False, "error": str(e)}
+        return {
+            "ok": False, 
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": error_trace[-500:] if len(error_trace) > 500 else error_trace
+        }
 
 
 @router.post("/setup-webhook")
