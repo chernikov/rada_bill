@@ -27,7 +27,7 @@ class Config:
     GCS_BUCKET_NAME = os.getenv('GCS_BUCKET_NAME', 'learn-documents-prod')
     
     # Google AI
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '').strip() if os.getenv('GEMINI_API_KEY') else None
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
     GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-pro')
     
     # Firebase
@@ -35,9 +35,9 @@ class Config:
     FIRESTORE_DATABASE = os.getenv('FIRESTORE_DATABASE', '(default)')
     
     # Telegram
-    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '').strip() if os.getenv('TELEGRAM_BOT_TOKEN') else None
-    TELEGRAM_WEBHOOK_URL = os.getenv('TELEGRAM_WEBHOOK_URL', '').strip() if os.getenv('TELEGRAM_WEBHOOK_URL') else None
-    TELEGRAM_SECRET_TOKEN = os.getenv('TELEGRAM_SECRET_TOKEN', '').strip() if os.getenv('TELEGRAM_SECRET_TOKEN') else None
+    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+    TELEGRAM_WEBHOOK_URL = os.getenv('TELEGRAM_WEBHOOK_URL')
+    TELEGRAM_SECRET_TOKEN = os.getenv('TELEGRAM_SECRET_TOKEN')
     
     # API Settings
     API_HOST = os.getenv('API_HOST', '0.0.0.0')
