@@ -48,10 +48,7 @@ async def lifespan(app: FastAPI):
             # Auto-setup webhook if URL is configured
             if config.TELEGRAM_WEBHOOK_URL:
                 try:
-                    webhook_kwargs = {"webhook_url": config.TELEGRAM_WEBHOOK_URL}
-                    if config.TELEGRAM_SECRET_TOKEN:
-                        webhook_kwargs["secret_token"] = config.TELEGRAM_SECRET_TOKEN
-                    success = await bot.set_webhook(**webhook_kwargs)
+                    success = await bot.set_webhook(webhook_url=config.TELEGRAM_WEBHOOK_URL)
                     if success:
                         print(f"✅ Webhook налаштовано: {config.TELEGRAM_WEBHOOK_URL}")
                     else:
