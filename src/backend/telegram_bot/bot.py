@@ -720,8 +720,11 @@ class TelegramBot:
         
         logger.warning("unknown_command", user_id=user.id, command=command)
         
+        # Escape the command to prevent Markdown parsing errors
+        escaped_command = escape_markdown(command)
+        
         await update.message.reply_text(
-            f"❌ Невідома команда: `{command}`\n\n"
+            f"❌ Невідома команда: `{escaped_command}`\n\n"
             "📋 Доступні команди:\n"
             "/start - Почати роботу\n"
             "/help - Довідка\n"
