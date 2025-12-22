@@ -80,8 +80,7 @@ jobs:
           GEMINI_TEMPERATURE=0.7
           GEMINI_MAX_TOKENS=8000
           EOF
-          
-          # Add secrets without newlines
+          # Add secrets without newlines (echo adds newline automatically)
           echo "GEMINI_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env.production
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env.production
           echo "TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }}" >> .env.production
