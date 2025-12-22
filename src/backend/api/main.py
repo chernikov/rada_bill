@@ -44,17 +44,6 @@ async def lifespan(app: FastAPI):
             bot.setup()
             await bot.start()
             print(f"🤖 Telegram bot initialized")
-            
-            # Auto-setup webhook if URL is configured
-            if config.TELEGRAM_WEBHOOK_URL:
-                try:
-                    success = await bot.set_webhook(webhook_url=config.TELEGRAM_WEBHOOK_URL)
-                    if success:
-                        print(f"✅ Webhook налаштовано: {config.TELEGRAM_WEBHOOK_URL}")
-                    else:
-                        print(f"⚠️ Не вдалося налаштувати webhook")
-                except Exception as e:
-                    print(f"⚠️ Webhook setup error: {e}")
         except Exception as e:
             print(f"⚠️ Telegram bot initialization failed: {e}")
             print("⚠️ Continuing without Telegram bot...")

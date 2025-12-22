@@ -747,53 +747,6 @@ class TelegramBot:
             logger.error("update_processing_failed", error=str(e), update=update_data)
             raise
     
-    async def set_webhook(self, webhook_url: str, secret_token: str):
-        """Set webhook URL for bot"""
-        try:
-            success = await self.application.bot.set_webhook(
-                url=webhook_url,
-                secret_token=secret_token,
-                allowed_updates=["message", "callback_query"],
-                drop_pending_updates=True
-            )
-            
-            if success:
-                logger.info("webhook_set", url=webhook_url)
-            else:
-                logger.error("webhook_set_failed", url=webhook_url)
-            
-            return success
-        except Exception as e:
-            logger.error("webhook_setup_error", error=str(e))
-            raise
-    
-    async def delete_webhook(self):
-        """Delete webhook (for switching to polling mode)"""
-        try:
-            success = await self.application.bot.delete_webhook(drop_pending_updates=True)
-            logger.info("webhook_deleted", success=success)
-            return success
-        except Exception as e:
-            logger.error("webhook_deletion_failed", error=str(e))
-            raise
-    
-    async def get_webhook_info(self):
-        """Get current webhook information"""
-        try:
-            info = await self.application.bot.get_webhook_info()
-            return {
-                "url": info.url,
-                "has_custom_certificate": info.has_custom_certificate,
-                "pending_update_count": info.pending_update_count,
-                "last_error_date": info.last_error_date,
-                "last_error_message": info.last_error_message,
-                "max_connections": info.max_connections,
-                "allowed_updates": info.allowed_updates
-            }
-        except Exception as e:
-            logger.error("webhook_info_failed", error=str(e))
-            raise
-    
     async def start(self):
         """Start the bot in webhook mode only"""
         logger.info("starting_telegram_bot")
