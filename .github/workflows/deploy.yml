@@ -41,6 +41,32 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
       
+      - name: Get or Set Service URL
+        id: service-url
+        run: |
+          # Try to get existing service URL first
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          
+          # If service doesn't exist, construct expected URL
+          if [ -z "$SERVICE_URL" ]; then
+            echo "Service not found, will be created"
+            SERVICE_URL="https://${{ env.SERVICE_NAME }}-ahys7wglfa-${{ env.REGION }}.a.run.app"
+          fi
+          
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "WEBHOOK_URL=$SERVICE_URL/api/telegram/webhook" >> $GITHUB_OUTPUT
+          echo "Service URL: $SERVICE_URL"
+          echo "Webhook URL: $SERVICE_URL/api/telegram/webhook"
+      
+      - name: Generate Secret Token
+        id: secret-token
+        run: |
+          SECRET_TOKEN=$(openssl rand -hex 32)
+          echo "token=$SECRET_TOKEN" >> $GITHUB_OUTPUT
+          echo "::add-mask::$SECRET_TOKEN"
+      
       - name: Create .env.production file
         run: |
           cat > .env.production << 'EOF'
@@ -65,6 +91,8 @@ jobs:
           # Add secrets without newlines
           echo "GEMINI_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env.production
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env.production
+          echo "TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }}" >> .env.production
+          echo "TELEGRAM_SECRET_TOKEN=${{ steps.secret-token.outputs.token }}" >> .env.production
       
       - name: Build Docker image
         run: |
@@ -91,32 +119,6 @@ jobs:
             --data-file=- \
             --replication-policy=automatic \
             || gcloud secrets versions add TELEGRAM_BOT_TOKEN --data-file=- <<< "${{ secrets.TELEGRAM_BOT_TOKEN }}"
-      
-      - name: Get or Set Service URL
-        id: service-url
-        run: |
-          # Try to get existing service URL first
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.REGION }} \
-            --format 'value(status.url)' 2>/dev/null || echo "")
-          
-          # If service doesn't exist, construct expected URL
-          if [ -z "$SERVICE_URL" ]; then
-            echo "Service not found, will be created"
-            SERVICE_URL="https://${{ env.SERVICE_NAME }}-$(gcloud config get-value project | md5sum | cut -c1-10)-${{ env.REGION }}.a.run.app"
-          fi
-          
-          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
-          echo "WEBHOOK_URL=$SERVICE_URL/api/telegram/webhook" >> $GITHUB_OUTPUT
-          echo "Service URL: $SERVICE_URL"
-          echo "Webhook URL: $SERVICE_URL/api/telegram/webhook"
-      
-      - name: Generate Secret Token
-        id: secret-token
-        run: |
-          SECRET_TOKEN=$(openssl rand -hex 32)
-          echo "token=$SECRET_TOKEN" >> $GITHUB_OUTPUT
-          echo "::add-mask::$SECRET_TOKEN"
       
       - name: Deploy to Cloud Run
         run: |
