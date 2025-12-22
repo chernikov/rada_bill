@@ -55,10 +55,14 @@ jobs:
             SERVICE_URL="https://${{ env.SERVICE_NAME }}-ahys7wglfa-${{ env.REGION }}.a.run.app"
           fi
           
+          # Trim any whitespace/newlines from SERVICE_URL
+          SERVICE_URL=$(echo "$SERVICE_URL" | tr -d '\n' | tr -d '\r' | xargs)
+          WEBHOOK_URL="$SERVICE_URL/api/telegram/webhook"
+          
           echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
-          echo "WEBHOOK_URL=$SERVICE_URL/api/telegram/webhook" >> $GITHUB_OUTPUT
+          echo "WEBHOOK_URL=$WEBHOOK_URL" >> $GITHUB_OUTPUT
           echo "Service URL: $SERVICE_URL"
-          echo "Webhook URL: $SERVICE_URL/api/telegram/webhook"
+          echo "Webhook URL: $WEBHOOK_URL"
       
       - name: Create .env.production file
         run: |

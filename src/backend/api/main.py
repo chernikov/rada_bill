@@ -30,6 +30,14 @@ async def lifespan(app: FastAPI):
     if config.TELEGRAM_BOT_TOKEN:
         try:
             from backend.telegram_bot.bot import bot
+            
+            # Debug: print webhook URL to check for newlines
+            print(f"🔍 Debug: TELEGRAM_WEBHOOK_URL = '{config.TELEGRAM_WEBHOOK_URL}'")
+            print(f"🔍 Debug: TELEGRAM_WEBHOOK_URL length = {len(config.TELEGRAM_WEBHOOK_URL) if config.TELEGRAM_WEBHOOK_URL else 0}")
+            print(f"🔍 Debug: TELEGRAM_WEBHOOK_URL repr = {repr(config.TELEGRAM_WEBHOOK_URL)}")
+            print(f"🔍 Debug: TELEGRAM_SECRET_TOKEN length = {len(config.TELEGRAM_SECRET_TOKEN) if config.TELEGRAM_SECRET_TOKEN else 0}")
+            print(f"🔍 Debug: TELEGRAM_SECRET_TOKEN repr = {repr(config.TELEGRAM_SECRET_TOKEN)}")
+            
             bot.setup()
             await bot.start()
             print(f"🤖 Telegram bot initialized")
