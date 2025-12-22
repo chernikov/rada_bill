@@ -629,13 +629,6 @@ class TelegramBot:
 
 {get_version_string()}
 
-📦 Компоненти:
-• Python-Telegram-Bot
-• Google Gemini AI
-• Firestore Database
-• Cloud Storage
-
-🔗 GitHub: [rada_bill](https://github.com/your-repo)
 """
         
         await update.message.reply_text(version_text, parse_mode='Markdown')
