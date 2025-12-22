@@ -46,12 +46,12 @@ async def lifespan(app: FastAPI):
             print(f"🤖 Telegram bot initialized")
             
             # Auto-setup webhook if URL is configured
-            if config.TELEGRAM_WEBHOOK_URL and config.TELEGRAM_SECRET_TOKEN:
+            if config.TELEGRAM_WEBHOOK_URL:
                 try:
-                    success = await bot.set_webhook(
-                        webhook_url=config.TELEGRAM_WEBHOOK_URL,
-                        secret_token=config.TELEGRAM_SECRET_TOKEN
-                    )
+                    webhook_kwargs = {"webhook_url": config.TELEGRAM_WEBHOOK_URL}
+                    if config.TELEGRAM_SECRET_TOKEN:
+                        webhook_kwargs["secret_token"] = config.TELEGRAM_SECRET_TOKEN
+                    success = await bot.set_webhook(**webhook_kwargs)
                     if success:
                         print(f"✅ Webhook налаштовано: {config.TELEGRAM_WEBHOOK_URL}")
                     else:

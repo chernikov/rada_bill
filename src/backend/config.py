@@ -68,7 +68,6 @@ class Config:
             'GEMINI_API_KEY',
             'TELEGRAM_BOT_TOKEN',
             'TELEGRAM_WEBHOOK_URL',
-            'TELEGRAM_SECRET_TOKEN',
             'GOOGLE_CLOUD_PROJECT',
         ]
         missing = [key for key in required if not getattr(cls, key)]

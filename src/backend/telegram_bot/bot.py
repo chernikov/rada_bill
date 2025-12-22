@@ -803,11 +803,6 @@ class TelegramBot:
             logger.error("webhook_url_missing")
             raise ValueError(error_msg)
         
-        if not config.TELEGRAM_SECRET_TOKEN:
-            error_msg = "TELEGRAM_SECRET_TOKEN is required for webhook security."
-            logger.error("secret_token_missing")
-            raise ValueError(error_msg)
-        
         # Webhook mode only - updates come through API endpoint
         await self.application.initialize()
         await self.application.start()  # Start without updater
