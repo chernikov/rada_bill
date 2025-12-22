@@ -59,7 +59,7 @@ class Config:
     
     @classmethod
     def validate(cls):
-        """Validate required configuration (relaxed for testing)"""
+        """Validate required configuration"""
         # Only validate if not in test/dev mode
         if cls.DEBUG:
             return  # Skip validation in debug mode
@@ -67,6 +67,8 @@ class Config:
         required = [
             'GEMINI_API_KEY',
             'TELEGRAM_BOT_TOKEN',
+            'TELEGRAM_WEBHOOK_URL',
+            'TELEGRAM_SECRET_TOKEN',
             'GOOGLE_CLOUD_PROJECT',
         ]
         missing = [key for key in required if not getattr(cls, key)]

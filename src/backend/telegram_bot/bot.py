@@ -784,40 +784,33 @@ class TelegramBot:
             raise
     
     async def start(self):
-        """Start the bot (initialize only for webhook mode)"""
+        """Start the bot in webhook mode only"""
         logger.info("starting_telegram_bot")
         
-        # In webhook mode, we don't start updater or polling
-        # Updates come through API endpoint
-        if config.TELEGRAM_WEBHOOK_URL:
-            await self.application.initialize()
-            await self.application.start()  # Start without updater
-            logger.info("bot_initialized_webhook_mode", webhook=config.TELEGRAM_WEBHOOK_URL)
-            print(f"🌐 Bot running in WEBHOOK mode: {config.TELEGRAM_WEBHOOK_URL}")
-        else:
-            # For polling mode (local development)
-            await self.application.initialize()
-            await self.application.start()
-            await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-            logger.info("bot_started_polling_mode")
-            print("🔄 Bot running in POLLING mode")
+        if not config.TELEGRAM_WEBHOOK_URL:
+            error_msg = "TELEGRAM_WEBHOOK_URL is required. Bot only works in webhook mode."
+            logger.error("webhook_url_missing")
+            raise ValueError(error_msg)
+        
+        if not config.TELEGRAM_SECRET_TOKEN:
+            error_msg = "TELEGRAM_SECRET_TOKEN is required for webhook security."
+            logger.error("secret_token_missing")
+            raise ValueError(error_msg)
+        
+        # Webhook mode only - updates come through API endpoint
+        await self.application.initialize()
+        await self.application.start()  # Start without updater
+        logger.info("bot_initialized_webhook_mode", webhook=config.TELEGRAM_WEBHOOK_URL)
+        print(f"🌐 Bot running in WEBHOOK mode: {config.TELEGRAM_WEBHOOK_URL}")
     
     async def stop(self):
         """Stop the bot"""
         logger.info("stopping_telegram_bot")
         
         if self.application:
-            if config.TELEGRAM_WEBHOOK_URL:
-                # In webhook mode, manually stop and shutdown
-                await self.application.stop()
-                await self.application.shutdown()
-            else:
-                # In polling mode, run_polling handles cleanup
-                # Just stop the updater if it exists
-                if hasattr(self.application, 'updater') and self.application.updater:
-                    await self.application.updater.stop()
-                await self.application.stop()
-                await self.application.shutdown()
+            # Webhook mode - manually stop and shutdown
+            await self.application.stop()
+            await self.application.shutdown()
 
 
 # Bot instance
