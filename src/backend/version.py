@@ -20,7 +20,9 @@ def get_version():
 
 def get_version_string():
     """Повертає версію як рядок"""
-    return f"v{VERSION} (build {BUILD_NUMBER}, {BUILD_DATE})"
+    from datetime import datetime
+    current_time = datetime.now().strftime("%H:%M:%S")
+    return f"v{VERSION} (build {BUILD_NUMBER}, {BUILD_DATE} {current_time})"
 
 
 def increment_build():
