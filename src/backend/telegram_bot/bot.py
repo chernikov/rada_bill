@@ -221,10 +221,6 @@ class TelegramBot:
 • /bill 10000 - аналіз ЗП №10000
 • 12414 - швидкий аналіз
 
-🤖 Інші команди:
-• /status - Статистика використання
-• /version - Версія бота
-
 ❓ Питання? Напишіть @andriy_chernikov"""
         
         await update.message.reply_text(help_text)
