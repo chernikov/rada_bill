@@ -146,6 +146,9 @@ class TelegramBot:
             MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message)
         )
         
+        # Unknown command handler (must be last)
+        self.application.add_handler(MessageHandler(filters.COMMAND, self.unknown_command))
+        
         logger.info("bot_handlers_registered")
         print("✅ Bot handlers registered: start, help, bill, search, status")
     
@@ -709,6 +712,25 @@ class TelegramBot:
                 "❓ Не розумію цю команду.\n"
                 "Використайте /help для списку доступних команд."
             )
+    
+    async def unknown_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle unknown commands"""
+        user = update.effective_user
+        command = update.message.text
+        
+        logger.warning("unknown_command", user_id=user.id, command=command)
+        
+        await update.message.reply_text(
+            f"❌ Невідома команда: `{command}`\n\n"
+            "📋 Доступні команди:\n"
+            "/start - Почати роботу\n"
+            "/help - Довідка\n"
+            "/bill <номер> - Аналіз законопроєкту\n"
+            "/search <запит> - Пошук законопроєктів\n"
+            "/status - Статус системи\n"
+            "/version - Версія бота",
+            parse_mode="Markdown"
+        )
     
     async def process_update(self, update_data: dict):
         """Process incoming update from webhook"""

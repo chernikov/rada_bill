@@ -60,13 +60,6 @@ jobs:
           echo "Service URL: $SERVICE_URL"
           echo "Webhook URL: $SERVICE_URL/api/telegram/webhook"
       
-      - name: Generate Secret Token
-        id: secret-token
-        run: |
-          SECRET_TOKEN=$(openssl rand -hex 32)
-          echo "token=$SECRET_TOKEN" >> $GITHUB_OUTPUT
-          echo "::add-mask::$SECRET_TOKEN"
-      
       - name: Create .env.production file
         run: |
           cat > .env.production << 'EOF'
@@ -92,7 +85,7 @@ jobs:
           echo "GEMINI_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env.production
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env.production
           echo "TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }}" >> .env.production
-          echo "TELEGRAM_SECRET_TOKEN=${{ steps.secret-token.outputs.token }}" >> .env.production
+          echo "TELEGRAM_SECRET_TOKEN=${{ secrets.TELEGRAM_SECRET_TOKEN }}" >> .env.production
       
       - name: Build Docker image
         run: |
@@ -132,7 +125,7 @@ jobs:
             --timeout 300 \
             --max-instances 10 \
             --min-instances 0 \
-            --set-env-vars="DEBUG=false,GCP_PROJECT_ID=${{ env.PROJECT_ID }},FIRESTORE_DATABASE=(default),GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }},TELEGRAM_SECRET_TOKEN=${{ steps.secret-token.outputs.token }}" \
+            --set-env-vars="DEBUG=false,GCP_PROJECT_ID=${{ env.PROJECT_ID }},FIRESTORE_DATABASE=(default),GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }},TELEGRAM_WEBHOOK_URL=${{ steps.service-url.outputs.WEBHOOK_URL }},TELEGRAM_SECRET_TOKEN=${{ secrets.TELEGRAM_SECRET_TOKEN }}" \
             --update-secrets="GEMINI_API_KEY=GEMINI_API_KEY:latest,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest"
       
       - name: Verify Service URL
