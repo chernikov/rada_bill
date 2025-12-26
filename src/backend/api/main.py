@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from backend.config import config
-from backend.api.routes import bills, documents, telegram, admin
+from backend.api.routes import telegram
 from backend.api.middleware.logging import LoggingMiddleware
 from backend.api.middleware.error_handler import ErrorHandlerMiddleware
 
@@ -87,10 +87,7 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
 # Include routers
-app.include_router(bills.router, prefix="/api/bills", tags=["Bills"])
-app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["Telegram"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 
 
 @app.get("/", response_class=HTMLResponse)
