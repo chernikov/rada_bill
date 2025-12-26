@@ -21,40 +21,10 @@ from backend.services.firestore_service import FirestoreService
 from backend.services.converters.pdf_converter import PDFConverter
 from backend.services.converters.docx_converter import DOCXConverter
 from backend.version import get_version_string
+from backend.telegram_bot.utils_adapter import escape_markdown, sanitize_markdown, send_text_safe
 
 
 logger = structlog.get_logger()
-
-
-def escape_markdown(text: str) -> str:
-    """
-    Escape special Markdown characters for Telegram.
-    This prevents parsing errors when text contains unbalanced markers.
-    """
-    # Characters that need escaping in Markdown mode
-    escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    
-    result = text
-    for char in escape_chars:
-        result = result.replace(char, '\\' + char)
-    
-    return result
-
-
-def sanitize_markdown(text: str) -> str:
-    """
-    Try to fix common Markdown issues that cause Telegram parsing errors.
-    Removes unbalanced asterisks and underscores.
-    """
-    # Count asterisks and underscores - if odd, remove formatting
-    if text.count('*') % 2 != 0:
-        text = text.replace('*', '')
-    if text.count('_') % 2 != 0:
-        text = text.replace('_', '')
-    if text.count('`') % 2 != 0:
-        text = text.replace('`', '')
-    
-    return text
 
 
 class TelegramBot:
@@ -487,15 +457,6 @@ class TelegramBot:
             # Split if too long (Telegram limit 4096 chars)
             max_length = 4000 - len(header)
             
-            async def send_text_safe(text: str):
-                """Send text with fallback to plain text if Markdown fails"""
-                try:
-                    await update.message.reply_text(text, parse_mode='Markdown')
-                except Exception as parse_error:
-                    logger.warning("markdown_parse_failed", error=str(parse_error))
-                    # Fallback: send without Markdown formatting
-                    await update.message.reply_text(text)
-            
             if len(safe_analysis_text) > max_length:
                 # Split by paragraphs to avoid breaking markdown
                 parts = []
@@ -517,15 +478,15 @@ class TelegramBot:
                 
                 # Delete status message and send first part with header
                 await status_message.delete()
-                await send_text_safe(header + f"Частина 1/{len(parts)}\n\n{parts[0]}")
+                await send_text_safe(update, header + f"Частина 1/{len(parts)}\n\n{parts[0]}")
                 
                 # Send remaining parts
                 for i, part in enumerate(parts[1:], 2):
-                    await send_text_safe(f"Частина {i}/{len(parts)}\n\n{part}")
+                    await send_text_safe(update, f"Частина {i}/{len(parts)}\n\n{part}")
             else:
                 # Delete status message and send complete result
                 await status_message.delete()
-                await send_text_safe(header + safe_analysis_text)
+                await send_text_safe(update, header + safe_analysis_text)
             
             # Save analysis record to Firestore
             await self.firestore.create_analysis({
