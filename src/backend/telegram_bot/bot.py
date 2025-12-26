@@ -18,8 +18,7 @@ from backend.services.document_downloader import DocumentDownloaderService
 from backend.services.ai_service import AIService
 from backend.services.storage_service import StorageService
 from backend.services.firestore_service import FirestoreService
-from backend.services.converters.pdf_converter import PDFConverter
-from backend.services.converters.docx_converter import DOCXConverter
+from backend.services.converters import DocumentConverter
 from backend.version import get_version_string
 from backend.telegram_bot.utils_adapter import escape_markdown, sanitize_markdown, send_text_safe
 
@@ -49,8 +48,7 @@ class TelegramBot:
         self._ai_service = None
         self._storage = None
         self._firestore = None
-        self._pdf_converter = None
-        self._docx_converter = None
+        self._converter = None
         
         logger.info("telegram_bot_initialized")
     
@@ -85,16 +83,10 @@ class TelegramBot:
         return self._firestore
     
     @property
-    def pdf_converter(self):
-        if self._pdf_converter is None:
-            self._pdf_converter = PDFConverter()
-        return self._pdf_converter
-    
-    @property
-    def docx_converter(self):
-        if self._docx_converter is None:
-            self._docx_converter = DOCXConverter()
-        return self._docx_converter
+    def converter(self):
+        if self._converter is None:
+            self._converter = DocumentConverter()
+        return self._converter
     
     def setup(self):
         """Setup bot handlers"""
@@ -352,19 +344,12 @@ class TelegramBot:
                     except Exception as gcs_error:
                         logger.warning("gcs_upload_failed", error=str(gcs_error), file=doc_filename)
                     
-                    # Convert to markdown
-                    if doc['file_ext'] == '.pdf':
-                        markdown = await self.pdf_converter.convert_to_markdown(
-                            doc['content'],
-                            doc['original_name']
-                        )
-                    elif doc['file_ext'] == '.docx':
-                        markdown = await self.docx_converter.convert_to_markdown(
-                            doc['content'],
-                            doc['original_name']
-                        )
-                    else:
-                        continue
+                    # Convert to markdown using unified converter
+                    markdown = await self.converter.convert_to_markdown(
+                        doc['content'],
+                        doc['original_name'],
+                        doc['file_ext']
+                    )
                     
                     if markdown:
                         all_text.append(f"\n## {doc['original_name']}\n\n{markdown}")
