@@ -3,8 +3,6 @@
 /test/data/**
 **/data/**
 
-
-
 # IDE files
 .idea
 .vscode/
@@ -46,4 +44,6 @@ ENV/
 env.bak/
 venv.bak/
 
+/archive
 archive.zip
+/utils
