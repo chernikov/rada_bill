@@ -542,12 +542,9 @@ class TelegramBot:
             # Format results
             response = f"🔍 **Результати пошуку:** {len(bills)} законопроєктів\n\n"
             
-            for i, bill in enumerate(bills[:10], 1):
+            for i, bill in enumerate(bills, 1):
                 bill_num = bill['bill_number']
                 response += f"{i}. ЗП №{bill_num} - `/bill {bill_num}`\n"
-            
-            if len(bills) > 10:
-                response += f"\n... та ще {len(bills) - 10} результатів"
             
             response += (
                 f"\n\n💡 Щоб проаналізувати, використайте команду:\n"
