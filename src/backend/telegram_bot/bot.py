@@ -2,7 +2,7 @@
 Telegram Bot with command handlers
 """
 import structlog
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -18,43 +18,12 @@ from backend.services.document_downloader import DocumentDownloaderService
 from backend.services.ai_service import AIService
 from backend.services.storage_service import StorageService
 from backend.services.firestore_service import FirestoreService
-from backend.services.converters.pdf_converter import PDFConverter
-from backend.services.converters.docx_converter import DOCXConverter
+from backend.services.converters import DocumentConverter
 from backend.version import get_version_string
+from backend.telegram_bot.utils_adapter import escape_markdown, sanitize_markdown, send_text_safe
 
 
 logger = structlog.get_logger()
-
-
-def escape_markdown(text: str) -> str:
-    """
-    Escape special Markdown characters for Telegram.
-    This prevents parsing errors when text contains unbalanced markers.
-    """
-    # Characters that need escaping in Markdown mode
-    escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    
-    result = text
-    for char in escape_chars:
-        result = result.replace(char, '\\' + char)
-    
-    return result
-
-
-def sanitize_markdown(text: str) -> str:
-    """
-    Try to fix common Markdown issues that cause Telegram parsing errors.
-    Removes unbalanced asterisks and underscores.
-    """
-    # Count asterisks and underscores - if odd, remove formatting
-    if text.count('*') % 2 != 0:
-        text = text.replace('*', '')
-    if text.count('_') % 2 != 0:
-        text = text.replace('_', '')
-    if text.count('`') % 2 != 0:
-        text = text.replace('`', '')
-    
-    return text
 
 
 class TelegramBot:
@@ -79,8 +48,7 @@ class TelegramBot:
         self._ai_service = None
         self._storage = None
         self._firestore = None
-        self._pdf_converter = None
-        self._docx_converter = None
+        self._converter = None
         
         logger.info("telegram_bot_initialized")
     
@@ -115,16 +83,10 @@ class TelegramBot:
         return self._firestore
     
     @property
-    def pdf_converter(self):
-        if self._pdf_converter is None:
-            self._pdf_converter = PDFConverter()
-        return self._pdf_converter
-    
-    @property
-    def docx_converter(self):
-        if self._docx_converter is None:
-            self._docx_converter = DOCXConverter()
-        return self._docx_converter
+    def converter(self):
+        if self._converter is None:
+            self._converter = DocumentConverter()
+        return self._converter
     
     def setup(self):
         """Setup bot handlers"""
@@ -382,19 +344,12 @@ class TelegramBot:
                     except Exception as gcs_error:
                         logger.warning("gcs_upload_failed", error=str(gcs_error), file=doc_filename)
                     
-                    # Convert to markdown
-                    if doc['file_ext'] == '.pdf':
-                        markdown = await self.pdf_converter.convert_to_markdown(
-                            doc['content'],
-                            doc['original_name']
-                        )
-                    elif doc['file_ext'] == '.docx':
-                        markdown = await self.docx_converter.convert_to_markdown(
-                            doc['content'],
-                            doc['original_name']
-                        )
-                    else:
-                        continue
+                    # Convert to markdown using unified converter
+                    markdown = await self.converter.convert_to_markdown(
+                        doc['content'],
+                        doc['original_name'],
+                        doc['file_ext']
+                    )
                     
                     if markdown:
                         all_text.append(f"\n## {doc['original_name']}\n\n{markdown}")
@@ -487,15 +442,6 @@ class TelegramBot:
             # Split if too long (Telegram limit 4096 chars)
             max_length = 4000 - len(header)
             
-            async def send_text_safe(text: str):
-                """Send text with fallback to plain text if Markdown fails"""
-                try:
-                    await update.message.reply_text(text, parse_mode='Markdown')
-                except Exception as parse_error:
-                    logger.warning("markdown_parse_failed", error=str(parse_error))
-                    # Fallback: send without Markdown formatting
-                    await update.message.reply_text(text)
-            
             if len(safe_analysis_text) > max_length:
                 # Split by paragraphs to avoid breaking markdown
                 parts = []
@@ -517,15 +463,15 @@ class TelegramBot:
                 
                 # Delete status message and send first part with header
                 await status_message.delete()
-                await send_text_safe(header + f"Частина 1/{len(parts)}\n\n{parts[0]}")
+                await send_text_safe(update, header + f"Частина 1/{len(parts)}\n\n{parts[0]}")
                 
                 # Send remaining parts
                 for i, part in enumerate(parts[1:], 2):
-                    await send_text_safe(f"Частина {i}/{len(parts)}\n\n{part}")
+                    await send_text_safe(update, f"Частина {i}/{len(parts)}\n\n{part}")
             else:
                 # Delete status message and send complete result
                 await status_message.delete()
-                await send_text_safe(header + safe_analysis_text)
+                await send_text_safe(update, header + safe_analysis_text)
             
             # Save analysis record to Firestore
             await self.firestore.create_analysis({
@@ -596,12 +542,9 @@ class TelegramBot:
             # Format results
             response = f"🔍 **Результати пошуку:** {len(bills)} законопроєктів\n\n"
             
-            for i, bill in enumerate(bills[:10], 1):
+            for i, bill in enumerate(bills, 1):
                 bill_num = bill['bill_number']
                 response += f"{i}. ЗП №{bill_num} - `/bill {bill_num}`\n"
-            
-            if len(bills) > 10:
-                response += f"\n... та ще {len(bills) - 10} результатів"
             
             response += (
                 f"\n\n💡 Щоб проаналізувати, використайте команду:\n"

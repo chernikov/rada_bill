@@ -9,9 +9,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from backend.config import config
-from backend.api.routes import bills, documents, analyses, telegram, admin
+from backend.api.routes import telegram
 from backend.api.middleware.logging import LoggingMiddleware
 from backend.api.middleware.error_handler import ErrorHandlerMiddleware
+from backend.telegram_bot.bot import TelegramBot
 
 # Setup templates
 templates_dir = Path(__file__).parent / "templates"
@@ -30,7 +31,7 @@ async def lifespan(app: FastAPI):
     if config.TELEGRAM_BOT_TOKEN:
         try:
             from backend.telegram_bot.bot import bot
-            
+
             # Debug: print all telegram config to check for newlines
             print(f"🔍 Debug: TELEGRAM_BOT_TOKEN = '{config.TELEGRAM_BOT_TOKEN[:20]}...'")
             print(f"🔍 Debug: TELEGRAM_BOT_TOKEN length = {len(config.TELEGRAM_BOT_TOKEN)}")
@@ -87,11 +88,7 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
 # Include routers
-app.include_router(bills.router, prefix="/api/bills", tags=["Bills"])
-app.include_router(documents.router, prefix="/api/documents", tags=["Documents"])
-app.include_router(analyses.router, prefix="/api/analyses", tags=["Analyses"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["Telegram"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 
 
 @app.get("/", response_class=HTMLResponse)
