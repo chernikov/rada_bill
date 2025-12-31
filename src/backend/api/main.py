@@ -12,6 +12,7 @@ from backend.config import config
 from backend.api.routes import telegram
 from backend.api.middleware.logging import LoggingMiddleware
 from backend.api.middleware.error_handler import ErrorHandlerMiddleware
+from backend.telegram_bot.bot import TelegramBot
 
 # Setup templates
 templates_dir = Path(__file__).parent / "templates"
@@ -30,7 +31,7 @@ async def lifespan(app: FastAPI):
     if config.TELEGRAM_BOT_TOKEN:
         try:
             from backend.telegram_bot.bot import bot
-            
+
             # Debug: print all telegram config to check for newlines
             print(f"🔍 Debug: TELEGRAM_BOT_TOKEN = '{config.TELEGRAM_BOT_TOKEN[:20]}...'")
             print(f"🔍 Debug: TELEGRAM_BOT_TOKEN length = {len(config.TELEGRAM_BOT_TOKEN)}")

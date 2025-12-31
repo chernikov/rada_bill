@@ -2,7 +2,7 @@
 Telegram Bot with command handlers
 """
 import structlog
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
